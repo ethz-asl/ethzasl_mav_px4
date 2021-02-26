@@ -27,6 +27,7 @@ px4_add_git_submodule(TARGET git_gazebo PATH "${PX4_SOURCE_DIR}/Tools/sitl_gazeb
 px4_add_git_submodule(TARGET git_jmavsim PATH "${PX4_SOURCE_DIR}/Tools/jMAVSim")
 px4_add_git_submodule(TARGET git_flightgear_bridge PATH "${PX4_SOURCE_DIR}/Tools/flightgear_bridge")
 px4_add_git_submodule(TARGET git_jsbsim_bridge PATH "${PX4_SOURCE_DIR}/Tools/jsbsim_bridge")
+px4_add_git_submodule(TARGET git_rotors_simulator PATH "${PX4_SOURCE_DIR}/Tools/rotors_simulator")
 
 # Add support for external project building
 include(ExternalProject)
@@ -88,8 +89,22 @@ ExternalProject_Add(jsbsim_bridge
 	BUILD_ALWAYS 1
 )
 
+ExternalProject_Add(rotors_simulator
+	SOURCE_DIR ${PX4_SOURCE_DIR}/Tools/rotors_simulator/rotors_gazebo_plugins
+	CMAKE_ARGS
+		-DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX} -DNO_ROS=TRUE
+	BINARY_DIR ${PX4_BINARY_DIR}/build_rotors_simulator
+	INSTALL_COMMAND ""
+	DEPENDS
+		git_rotors_simulator
+	USES_TERMINAL_CONFIGURE true
+	USES_TERMINAL_BUILD true
+	EXCLUDE_FROM_ALL true
+	BUILD_ALWAYS 1
+)
+
 # create targets for each viewer/model/debugger combination
-set(viewers none jmavsim gazebo)
+set(viewers none jmavsim gazebo rotors)
 set(debuggers none ide gdb lldb ddd valgrind callgrind)
 set(models none shell
 	if750a iris iris_dual_gps iris_opt_flow iris_opt_flow_mockup iris_vision iris_rplidar iris_irlock iris_ctrlalloc iris_obs_avoid iris_rtps px4vision solo typhoon_h480
@@ -135,6 +150,8 @@ foreach(viewer ${viewers})
 					list(APPEND all_posix_vmd_make_targets ${_targ_name})
 					if (viewer STREQUAL "gazebo")
 						add_dependencies(${_targ_name} px4 sitl_gazebo)
+					elseif(viewer STREQUAL "rotors")
+						add_dependencies(${_targ_name} px4 rotors_simulator)
 					elseif(viewer STREQUAL "jmavsim")
 						add_dependencies(${_targ_name} px4 git_jmavsim)
 					endif()
